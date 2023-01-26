@@ -1,0 +1,4 @@
+.venv
+.vscode
+*.parquet
+__pycache__

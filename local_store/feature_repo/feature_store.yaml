@@ -1,0 +1,12 @@
+project: local_store
+registry:
+    registry_type: sql
+    path: sqlite:///data/registry.db
+    cache_ttl_seconds: 60
+provider: local
+online_store:
+    type: sqlite
+    path: data/online_store.db
+offline_store:
+    type: file
+entity_key_serialization_version: 2

@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "feature-store"
+version = "0.1.0"
+description = ""
+authors = ["shaurya.rawat <shaurya.rawat@new-work.se>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+feast = "^0.28.0"
+scikit-learn = "^1.2.1"
+
+[tool.poetry.dev-dependencies]
+black = "^22.12.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
