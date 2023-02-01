@@ -13,7 +13,7 @@ patient = Entity(
 
 # Declaring file source to later define feature views
 source1 = FileSource(
-    path="/Users/shaurya.rawat/Documents/mlplatform/feature-store/local_store/feature_repo/data/df1.parquet",
+    path="data/df1.parquet",
     event_timestamp_column="event_timestamp",
 )
 
@@ -32,7 +32,7 @@ feature_view_1 = FeatureView(
 )
 
 source2 = FileSource(
-    path="/Users/shaurya.rawat/Documents/mlplatform/feature-store/local_store/feature_repo/data/df2.parquet",
+    path="data/df2.parquet",
     event_timestamp_column="event_timestamp",
 )
 
@@ -51,7 +51,7 @@ feature_view_2 = FeatureView(
 )
 
 source3 = FileSource(
-    path="/Users/shaurya.rawat/Documents/mlplatform/feature-store/local_store/feature_repo/data/df3.parquet",
+    path="data/df3.parquet",
     event_timestamp_column="event_timestamp",
 )
 
@@ -72,7 +72,7 @@ feature_view_3 = FeatureView(
 )
 
 source4 = FileSource(
-    path="/Users/shaurya.rawat/Documents/mlplatform/feature-store/local_store/feature_repo/data/df4.parquet",
+    path="data/df4.parquet",
     event_timestamp_column="event_timestamp",
 )
 
@@ -99,7 +99,7 @@ feature_view_4 = FeatureView(
 )
 
 target_source = FileSource(
-    path="/Users/shaurya.rawat/Documents/mlplatform/feature-store/local_store/feature_repo/data/target.parquet",
+    path="data/target.parquet",
     event_timestamp_column="event_timestamp",
 )
 
