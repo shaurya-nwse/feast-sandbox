@@ -36,21 +36,21 @@ target_df = pd.concat([target_df, patient_ids], axis=1)
 # Save to parquet
 df1.to_parquet(
     engine="pyarrow",
-    path="/Users/shaurya.rawat/Documents/mlplatform/feature-store/test_feast_2/feature_repo/data/df1.parquet",
+    path="feature_repo/data/df1.parquet",
 )
 df2.to_parquet(
     engine="pyarrow",
-    path="/Users/shaurya.rawat/Documents/mlplatform/feature-store/test_feast_2/feature_repo/data/df2.parquet",
+    path="feature_repo/data/df2.parquet",
 )
 df3.to_parquet(
     engine="pyarrow",
-    path="/Users/shaurya.rawat/Documents/mlplatform/feature-store/test_feast_2/feature_repo/data/df3.parquet",
+    path="feature_repo/data/df3.parquet",
 )
 df4.to_parquet(
     engine="pyarrow",
-    path="/Users/shaurya.rawat/Documents/mlplatform/feature-store/test_feast_2/feature_repo/data/df4.parquet",
+    path="feature_repo/data/df4.parquet",
 )
 target_df.to_parquet(
     engine="pyarrow",
-    path="/Users/shaurya.rawat/Documents/mlplatform/feature-store/test_feast_2/feature_repo/data/target.parquet",
+    path="feature_repo/data/target.parquet",
 )

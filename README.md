@@ -1,3 +1,3 @@
 # Feast Sandbox
 
-Playing around with the feature store
+Playing around with the Feast feature store
