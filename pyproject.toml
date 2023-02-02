@@ -6,10 +6,12 @@ authors = ["shaurya.rawat <shaurya.rawat@new-work.se>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-feast = {path = "/Users/shaurya.rawat/Documents/mlplatform/feast", develop = true}
+feast = {extras = ["redis"], version = "^0.29.0"}
 scikit-learn = "^1.2.1"
 grpcio-tools = "^1.51.1"
 grpcio = "^1.51.1"
+pyspark = "3.2"
+kafka-python = "^2.0.2"
 
 [tool.poetry.dev-dependencies]
 black = "^22.12.0"

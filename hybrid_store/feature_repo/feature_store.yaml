@@ -1,0 +1,11 @@
+project: hybrid_store
+registry: 
+    path: data/local_registry.db
+    cache_ttl_seconds: 5
+provider: local
+online_store:
+    type: redis
+    connection_string: localhost:6379
+offline_store:
+    type: file
+entity_key_serialization_version: 2

@@ -36,6 +36,7 @@ source2 = FileSource(
     event_timestamp_column="event_timestamp",
 )
 
+
 feature_view_2 = FeatureView(
     name="source2_feature_view",
     ttl=timedelta(days=90),
