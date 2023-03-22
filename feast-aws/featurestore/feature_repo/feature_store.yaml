@@ -1,0 +1,16 @@
+project: featurestore
+registry: s3://feast-aws-bucket/registry/registry.db
+provider: aws
+online_store:
+  type: dynamodb
+  region: eu-central-1
+go_feature_serving: True
+offline_store:
+  type: athena
+  data_source: AwsDataCatalog
+  region: eu-central-1
+  database: feast
+  workgroup: feast
+  s3_staging_location: "s3://feast-aws-bucket/staging"
+# Remove the  / from staging location information to download from s3 properly
+entity_key_serialization_version: 2

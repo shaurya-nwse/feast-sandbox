@@ -1,0 +1,13 @@
+.venv
+.vscode
+*.parquet
+__pycache__
+.terraform
+secrets.sh
+.idea
+.DS_Store
+.bsp
+out
+debug*
+*.backup
+.mypy_cache

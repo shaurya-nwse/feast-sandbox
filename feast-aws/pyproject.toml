@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "feast-aws"
+version = "0.1.0"
+description = "Feast feature store on AWS"
+authors = ["shaurya.rawat <shaurya.rawat@new-work.se>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+locust = "^2.15.0"
+feast = {extras = ["go"], version = "^0.29.0"}
+
+[tool.poetry.dev-dependencies]
+black = "^23.1.0"
+ipykernel = "^6.21.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

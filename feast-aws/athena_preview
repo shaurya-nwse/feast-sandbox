@@ -1,0 +1,376 @@
+CREATE TABLE feast_23b9a24637bd40f68e98af3bcd65045a
+                                    WITH (
+                                    external_location = 's3://feast-aws-bucket/staging/39c879ea-1291-45cb-aeb6-39ffcafe6d75',
+                                    format = 'parquet',
+                                    write_compression = 'snappy'
+                                    )
+                                    as
+WITH entity_dataframe AS (
+    SELECT *,
+        event_timestamp AS entity_timestamp
+
+
+            ,(
+
+                    CAST(zipcode as VARCHAR) ||
+
+                CAST(event_timestamp AS VARCHAR)
+            ) AS zipcode_features__entity_row_unique_id
+
+
+
+            ,(
+
+                    CAST(dob_ssn as VARCHAR) ||
+
+                CAST(event_timestamp AS VARCHAR)
+            ) AS credit_history_features__entity_row_unique_id
+
+
+    FROM feast.entity_df
+),
+
+
+
+zipcode_features__entity_dataframe AS (
+    SELECT
+        zipcode,
+        entity_timestamp,
+        zipcode_features__entity_row_unique_id
+    FROM entity_dataframe
+    GROUP BY
+        zipcode,
+        entity_timestamp,
+        zipcode_features__entity_row_unique_id
+),
+
+/*
+ This query template performs the point-in-time correctness join for a single feature set table
+ to the provided entity table.
+
+ 1. We first join the current feature_view to the entity dataframe that has been passed.
+ This JOIN has the following logic:
+    - For each row of the entity dataframe, only keep the rows where the `timestamp_field`
+    is less than the one provided in the entity dataframe
+    - If there a TTL for the current feature_view, also keep the rows where the `timestamp_field`
+    is higher the the one provided minus the TTL
+    - For each row, Join on the entity key and retrieve the `entity_row_unique_id` that has been
+    computed previously
+
+ The output of this CTE will contain all the necessary information and already filtered out most
+ of the data that is not relevant.
+*/
+
+zipcode_features__subquery AS (
+    SELECT
+        event_timestamp as event_timestamp,
+        created_timestamp as created_timestamp,
+        zipcode AS zipcode,
+
+            city as zipcode_features__city,
+
+            state as zipcode_features__state,
+
+            location_type as zipcode_features__location_type,
+
+            tax_returns_filed as zipcode_features__tax_returns_filed,
+
+            population as zipcode_features__population,
+
+            total_wages as zipcode_features__total_wages
+
+    FROM "AwsDataCatalog"."feast"."zipcode_features"
+   WHERE event_timestamp <= from_iso8601_timestamp('2021-08-25T20:34:41.361000')
+
+
+
+    AND event_timestamp >= from_iso8601_timestamp('2010-08-28T20:34:41.361000')
+
+
+
+),
+
+zipcode_features__base AS (
+    SELECT
+        subquery.*,
+        entity_dataframe.entity_timestamp,
+        entity_dataframe.zipcode_features__entity_row_unique_id
+    FROM zipcode_features__subquery AS subquery
+    INNER JOIN zipcode_features__entity_dataframe AS entity_dataframe
+    ON TRUE
+        AND subquery.event_timestamp <= entity_dataframe.entity_timestamp
+
+
+        AND subquery.event_timestamp >= entity_dataframe.entity_timestamp - 315360000 * interval '1' second
+
+
+
+        AND subquery.zipcode = entity_dataframe.zipcode
+
+),
+
+/*
+ 2. If the `created_timestamp_column` has been set, we need to
+ deduplicate the data first. This is done by calculating the
+ `MAX(created_at_timestamp)` for each event_timestamp.
+ We then join the data on the next CTE
+*/
+
+zipcode_features__dedup AS (
+    SELECT
+        zipcode_features__entity_row_unique_id,
+        event_timestamp,
+        MAX(created_timestamp) as created_timestamp
+    FROM zipcode_features__base
+    GROUP BY zipcode_features__entity_row_unique_id, event_timestamp
+),
+
+
+/*
+ 3. The data has been filtered during the first CTE "*__base"
+ Thus we only need to compute the latest timestamp of each feature.
+*/
+zipcode_features__latest AS (
+    SELECT
+        event_timestamp,
+        created_timestamp,
+        zipcode_features__entity_row_unique_id
+    FROM
+    (
+        SELECT base.*,
+            ROW_NUMBER() OVER(
+                PARTITION BY base.zipcode_features__entity_row_unique_id
+                ORDER BY base.event_timestamp DESC,base.created_timestamp DESC
+            ) AS row_number
+        FROM zipcode_features__base as base
+
+            INNER JOIN zipcode_features__dedup as dedup
+            ON TRUE
+            AND base.zipcode_features__entity_row_unique_id = dedup.zipcode_features__entity_row_unique_id
+            AND base.event_timestamp = dedup.event_timestamp
+            AND base.created_timestamp = dedup.created_timestamp
+
+    )
+    WHERE row_number = 1
+),
+
+/*
+ 4. Once we know the latest value of each feature for a given timestamp,
+ we can join again the data back to the original "base" dataset
+*/
+zipcode_features__cleaned AS (
+    SELECT base.*
+    FROM zipcode_features__base as base
+    INNER JOIN zipcode_features__latest as latest
+    ON TRUE
+        AND base.zipcode_features__entity_row_unique_id = latest.zipcode_features__entity_row_unique_id
+        AND base.event_timestamp = latest.event_timestamp
+
+        AND base.created_timestamp = latest.created_timestamp
+
+),
+
+
+
+
+credit_history_features__entity_dataframe AS (
+    SELECT
+        dob_ssn,
+        entity_timestamp,
+        credit_history_features__entity_row_unique_id
+    FROM entity_dataframe
+    GROUP BY
+        dob_ssn,
+        entity_timestamp,
+        credit_history_features__entity_row_unique_id
+),
+
+/*
+ This query template performs the point-in-time correctness join for a single feature set table
+ to the provided entity table.
+
+ 1. We first join the current feature_view to the entity dataframe that has been passed.
+ This JOIN has the following logic:
+    - For each row of the entity dataframe, only keep the rows where the `timestamp_field`
+    is less than the one provided in the entity dataframe
+    - If there a TTL for the current feature_view, also keep the rows where the `timestamp_field`
+    is higher the the one provided minus the TTL
+    - For each row, Join on the entity key and retrieve the `entity_row_unique_id` that has been
+    computed previously
+
+ The output of this CTE will contain all the necessary information and already filtered out most
+ of the data that is not relevant.
+*/
+
+credit_history_features__subquery AS (
+    SELECT
+        event_timestamp as event_timestamp,
+        created_timestamp as created_timestamp,
+        dob_ssn AS dob_ssn,
+
+            credit_card_due as credit_history_features__credit_card_due,
+
+            mortgage_due as credit_history_features__mortgage_due,
+
+            student_loan_due as credit_history_features__student_loan_due,
+
+            vehicle_loan_due as credit_history_features__vehicle_loan_due,
+
+            hard_pulls as credit_history_features__hard_pulls,
+
+            missed_payments_2y as credit_history_features__missed_payments_2y,
+
+            missed_payments_1y as credit_history_features__missed_payments_1y,
+
+            missed_payments_6m as credit_history_features__missed_payments_6m,
+
+            bankruptcies as credit_history_features__bankruptcies
+
+    FROM "AwsDataCatalog"."feast"."credit_history"
+   WHERE event_timestamp <= from_iso8601_timestamp('2021-08-25T20:34:41.361000')
+
+
+
+    AND event_timestamp >= from_iso8601_timestamp('2010-08-28T20:34:41.361000')
+
+
+
+),
+
+credit_history_features__base AS (
+    SELECT
+        subquery.*,
+        entity_dataframe.entity_timestamp,
+        entity_dataframe.credit_history_features__entity_row_unique_id
+    FROM credit_history_features__subquery AS subquery
+    INNER JOIN credit_history_features__entity_dataframe AS entity_dataframe
+    ON TRUE
+        AND subquery.event_timestamp <= entity_dataframe.entity_timestamp
+
+
+        AND subquery.event_timestamp >= entity_dataframe.entity_timestamp - 315360000 * interval '1' second
+
+
+
+        AND subquery.dob_ssn = entity_dataframe.dob_ssn
+
+),
+
+/*
+ 2. If the `created_timestamp_column` has been set, we need to
+ deduplicate the data first. This is done by calculating the
+ `MAX(created_at_timestamp)` for each event_timestamp.
+ We then join the data on the next CTE
+*/
+
+credit_history_features__dedup AS (
+    SELECT
+        credit_history_features__entity_row_unique_id,
+        event_timestamp,
+        MAX(created_timestamp) as created_timestamp
+    FROM credit_history_features__base
+    GROUP BY credit_history_features__entity_row_unique_id, event_timestamp
+),
+
+
+/*
+ 3. The data has been filtered during the first CTE "*__base"
+ Thus we only need to compute the latest timestamp of each feature.
+*/
+credit_history_features__latest AS (
+    SELECT
+        event_timestamp,
+        created_timestamp,
+        credit_history_features__entity_row_unique_id
+    FROM
+    (
+        SELECT base.*,
+            ROW_NUMBER() OVER(
+                PARTITION BY base.credit_history_features__entity_row_unique_id
+                ORDER BY base.event_timestamp DESC,base.created_timestamp DESC
+            ) AS row_number
+        FROM credit_history_features__base as base
+
+            INNER JOIN credit_history_features__dedup as dedup
+            ON TRUE
+            AND base.credit_history_features__entity_row_unique_id = dedup.credit_history_features__entity_row_unique_id
+            AND base.event_timestamp = dedup.event_timestamp
+            AND base.created_timestamp = dedup.created_timestamp
+
+    )
+    WHERE row_number = 1
+),
+
+/*
+ 4. Once we know the latest value of each feature for a given timestamp,
+ we can join again the data back to the original "base" dataset
+*/
+credit_history_features__cleaned AS (
+    SELECT base.*
+    FROM credit_history_features__base as base
+    INNER JOIN credit_history_features__latest as latest
+    ON TRUE
+        AND base.credit_history_features__entity_row_unique_id = latest.credit_history_features__entity_row_unique_id
+        AND base.event_timestamp = latest.event_timestamp
+
+        AND base.created_timestamp = latest.created_timestamp
+
+)
+
+
+
+/*
+ Joins the outputs of multiple time travel joins to a single table.
+ The entity_dataframe dataset being our source of truth here.
+ */
+
+SELECT loan_id, dob_ssn, zipcode, person_age, person_income, person_home_ownership, person_emp_length, loan_intent, loan_amnt, loan_int_rate, loan_status, event_timestamp, created_timestamp, zipcode_features__city, zipcode_features__state, zipcode_features__location_type, zipcode_features__tax_returns_filed, zipcode_features__population, zipcode_features__total_wages, credit_history_features__credit_card_due, credit_history_features__mortgage_due, credit_history_features__student_loan_due, credit_history_features__vehicle_loan_due, credit_history_features__hard_pulls, credit_history_features__missed_payments_2y, credit_history_features__missed_payments_1y, credit_history_features__missed_payments_6m, credit_history_features__bankruptcies
+FROM entity_dataframe as entity_df
+
+LEFT JOIN (
+    SELECT
+        zipcode_features__entity_row_unique_id
+
+            ,zipcode_features__city
+
+            ,zipcode_features__state
+
+            ,zipcode_features__location_type
+
+            ,zipcode_features__tax_returns_filed
+
+            ,zipcode_features__population
+
+            ,zipcode_features__total_wages
+
+    FROM zipcode_features__cleaned
+) as cleaned
+ON TRUE
+AND entity_df.zipcode_features__entity_row_unique_id = cleaned.zipcode_features__entity_row_unique_id
+
+LEFT JOIN (
+    SELECT
+        credit_history_features__entity_row_unique_id
+
+            ,credit_history_features__credit_card_due
+
+            ,credit_history_features__mortgage_due
+
+            ,credit_history_features__student_loan_due
+
+            ,credit_history_features__vehicle_loan_due
+
+            ,credit_history_features__hard_pulls
+
+            ,credit_history_features__missed_payments_2y
+
+            ,credit_history_features__missed_payments_1y
+
+            ,credit_history_features__missed_payments_6m
+
+            ,credit_history_features__bankruptcies
+
+    FROM credit_history_features__cleaned
+) as cleaned
+ON TRUE
+AND entity_df.credit_history_features__entity_row_unique_id = cleaned.credit_history_features__entity_row_unique_id
